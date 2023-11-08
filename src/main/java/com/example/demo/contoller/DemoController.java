@@ -3,7 +3,7 @@ package com.example.demo.contoller;
 import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpHeaders;
-
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -58,13 +58,14 @@ public class DemoController {
 	
 	
 	@PostMapping("/user/registration")
-	public ResponseEntity<?> saveDetails(@RequestBody UserInfo user) {
+	public ResponseEntity<String> saveDetails(@RequestBody UserInfo user) {
 		
 		UserInfo existingUser =demoservice.getUserDetails(user.getUserName());
+		UserInfo existbyEmail =demoservice.getByEmail(user.getEmail());
 		if(null!=existingUser && null!= existingUser.getUserName()){
 			return ResponseEntity.badRequest().body("Username is already taken");
 		}
-		if(null!=existingUser && null!= existingUser.getEmail()){
+		if(null!=existbyEmail && null!= existbyEmail.getEmail()){
 			return ResponseEntity.badRequest().body("Email is already in use");
 		}
 		demoservice.save(user);
@@ -72,15 +73,25 @@ public class DemoController {
 		
 	}
 	@GetMapping("/user/authenicate/{username}/{password}")
-	public String authenticate(@PathVariable("username") String userName, 
+	public ResponseEntity<String> authenticate(@PathVariable("username") String userName, 
 			@PathVariable("password") String passWord) {
 		UserInfo user = demoservice.getUserDetails(userName);
 		if(null!=user && user.getPassword().equals(passWord)) {
-			return "logged in successfully";
+			return ResponseEntity.ok("Logged in Successfully ");
 		}
 		
 		else
-			return "Incorrect UserId or Password";
+			return ResponseEntity.badRequest().body("Incorrect UserId or Password");
+	}
+	
+	@GetMapping("/user/viewnIfo/{username}")
+	public UserInfo viewnIfo(@PathVariable("username") String userName) {
+		UserInfo user = demoservice.getUserDetails(userName);
+		if(Optional.ofNullable(user) != null) {
+			return user;
+		}
+		return new UserInfo() ;
+		
 	}
 	
 	@GetMapping("/user/view/images")
@@ -117,27 +128,19 @@ public class DemoController {
 		
 	
 	@PostMapping(value="/user/upload/images", consumes = "multipart/form-data")
-	public ResponseEntity<byte[]> uploadImage(@RequestHeader("Authorization") String accessToken, @RequestParam("image")  MultipartFile[] requestBody) throws IOException{
+	public ResponseEntity<byte[]> uploadImage(@RequestHeader("Authorization") String accessToken, @RequestParam("image")  MultipartFile[] imagefile) throws IOException{
 		
 		
 		RestTemplate rest = new RestTemplate();
 		org.springframework.http.HttpHeaders header =new org.springframework.http.HttpHeaders();
-		
 		header.set("Authorization", accessToken);
-			
-		
-		
 		MultiValueMap<String, Object> multipartMap = new LinkedMultiValueMap<> ();
-		
-		multipartMap.add ("file", new ClassPathResource("7097997285_d8c7b1f3ee.jpg"));
+		multipartMap.add ("file", imagefile);
 		header.set("Content-Type", "multipart/form-data");
-		header.set("Accept", "text/plain");
 		HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<MultiValueMap<String, Object>> (multipartMap, header);
 		System.out.println ("Request for File Upload : " + request);
 		
 		ResponseEntity<byte[]> result = rest.exchange ("https://api.imgur.com/3/image", HttpMethod.POST, request, byte[].class);
-		
-		
 		
 		return result;
 

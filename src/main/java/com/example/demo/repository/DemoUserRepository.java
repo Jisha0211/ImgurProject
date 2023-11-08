@@ -10,5 +10,5 @@ public interface DemoUserRepository extends JpaRepository<UserInfo, Integer>{
 
 	UserInfo findByUserName(String username);
 
-	
+	UserInfo findByEmail(String email);
 }

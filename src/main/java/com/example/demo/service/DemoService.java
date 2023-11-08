@@ -22,5 +22,8 @@ public class DemoService {
     return user;	
 	
 	}  
-	  
+	public UserInfo getByEmail(String email)  {
+		UserInfo user =repo.findByEmail(email); 
+		return user;
+	}
 }
